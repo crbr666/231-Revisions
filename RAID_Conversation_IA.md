@@ -24,27 +24,30 @@ RAID 0 — Striping
 
 Les données sont découpées en blocs et répartis sur tous les disques en parallèle. Aucune redondance : si un disque tombe, tout est perdu. Utilisé pour la performance pure (montage vidéo, cache temporaire).
 
+```
 Données : [A1][A2][A3][A4]
 Disque 1 : [A1][A3]
 Disque 2 : [A2][A4]
+```
 
 RAID 1 — Mirroring
 
 Chaque donnée est écrite simultanément sur deux disques (copie exacte). Survit à la perte d'un disque. Capacité réduite de moitié.
-
+```
 Données : [A]
 Disque 1 : [A]
 Disque 2 : [A]  ← copie exacte
+```
 
 RAID 5 — Striping + parité distribuée
 
 Les données et un bloc de parité (XOR) sont répartis sur tous les disques. Permet de reconstruire les données si un disque tombe. Bon compromis performance/redondance/capacité.
-
+```
 Disque 1 : [A1][B1][P_C]
 Disque 2 : [A2][P_B][C1]
 Disque 3 : [P_A][B2][C2]
             ↑ parité tournante
-
+```
 RAID 6 — Double parité
 
 Comme le RAID 5 mais avec deux blocs de parité indépendants. Survit à la perte de 2 disques simultanément. Plus lent en écriture.
@@ -57,11 +60,13 @@ RAID 10 (1+0)
 
 On crée des paires miroir (RAID 1), puis on stripe (RAID 0) entre elles.
 
+```
         RAID 0 (striping)
        ┌──────┴──────┐
     Paire 1       Paire 2
    [D1 | D2]    [D3 | D4]
   RAID1 miroir  RAID1 miroir
+```
 
     ✅ Survit à 1 disque par paire (jusqu'à 2 disques dans le meilleur cas)
     ✅ Très bonnes performances en lecture ET écriture
@@ -73,12 +78,13 @@ RAID 01 (0+1)
     Striping puis Mirroring
 
 On stripe d'abord, puis on duplique le groupe entier.
-
+```
         RAID 1 (miroir)
        ┌──────┴──────┐
    Groupe 1       Groupe 2
   [D1 | D2]    [D3 | D4]
   RAID0 stripe  RAID0 stripe
+```
 
     ⚠️ Si un disque du groupe 1 tombe → tout le groupe est perdu, seul le groupe 2 reste
     ❌ Moins résilient que le RAID 10
@@ -140,11 +146,12 @@ crée moi des schémas en mermaid de ces différents raid
 Voilà les schémas Mermaid pour chaque niveau de RAID :
 RAID 0 — Striping
 
+```mermaid
 graph TD
     Data[Données\nA1 A2 A3 A4]
     Data --> D1[Disque 1\nA1 · A3]
     Data --> D2[Disque 2\nA2 · A4]
-
+```
 RAID 1 — Mirroring
 DonnéesADisque 1A
 Disque 2A ← copie exacte
@@ -177,28 +184,31 @@ Failover (basculement)
 Le failover c'est la capacité d'un système à continuer de fonctionner automatiquement après la panne d'un composant, en basculant sur un composant de secours.
 
 Exemple avec le RAID 1 :
-
+```
 État normal :
 Disque 1 [A] ← lecture/écriture
 Disque 2 [A] ← en attente (miroir)
-
+```
+```
 Panne du disque 1 :
 Disque 1 [✗] ← mort
 Disque 2 [A] ← prend le relais automatiquement
                ↑ failover transparent pour l'utilisateur
-
+```
 Exemple avec le RAID 5 :
-
+```
 État normal :
 Disque 1 [A1][B1][Pc]
 Disque 2 [A2][Pb][C1]  ← tous actifs
 Disque 3 [Pa][B2][C2]
-
+```
+```
 Panne du disque 2 :
 Disque 1 [A1][B1][Pc]
 Disque 2 [ ✗ ]          ← mort
 Disque 3 [Pa][B2][C2]  ← A2 et C1 reconstruits via XOR
                            ↑ failover par recalcul de parité
+```
 
     Le système ne s'arrête pas — il reconstruit les données manquantes à la volée.
 
@@ -207,18 +217,20 @@ Load Balancing (répartition de charge)
 Le load balancing c'est la distribution du travail sur plusieurs composants en parallèle pour éviter qu'un seul soit saturé et améliorer les performances globales.
 
 Exemple avec le RAID 0 :
-
+```
 Requête lecture [A1][A2][A3][A4]
 
 Sans RAID 0 (1 disque) :
 Disque 1 → [A1] → [A2] → [A3] → [A4]   (séquentiel)
 Temps : ████████████████
-
+```
+```
 Avec RAID 0 (2 disques) :
 Disque 1 → [A1] → [A3]
 Disque 2 → [A2] → [A4]   (parallèle)
 Temps : ████████
          ↑ charge divisée par 2
+```
 
 Exemple avec le RAID 5 :
 
@@ -234,7 +246,7 @@ Disque 3 → répond à requête 3
 Les deux combinés — RAID 10
 
 Le RAID 10 est l'exemple parfait qui cumule les deux :
-
+```
 Requête lecture :
         RAID 0
        ┌──────┴──────┐
@@ -242,8 +254,10 @@ Requête lecture :
    [D1 | D2]    [D3 | D4]
       ↕              ↕
   l'un ou l'autre  l'un ou l'autre  ← failover au sein de chaque paire
+```
 
 Panne de D1 :
+```
         RAID 0
        ┌──────┴──────┐
     [✗  | D2]    [D3 | D4]
@@ -252,7 +266,7 @@ Panne de D1 :
      load balancing → continue sur les 2 paires
 
     Le load balancing reste actif même après un failover — c'est pourquoi le RAID 10 est privilégié en production.
-
+```
 Résumé conceptuel
 Concept	Objectif	Question à laquelle il répond
 Failover	Continuité de service	"Et si ça tombe ?"
@@ -286,46 +300,6 @@ Failover + Load Balancing — RAID 10 (après panne)
 ClientRAID 0Load Balancing maintenuPaire 1RAID 1Paire 2RAID 1Disque 1✗ mortDisque 2✓ failoverDisque 3
 Disque 4
 
-j'ai cette erreur dans obsidian quand j'insère du mermaid:
-Error
-mermaid is not defined
-12 juin
-
-C'est un problème classique sous Obsidian — le renderer Mermaid n'est pas activé par défaut.
-
-Settings → Community plugins → Browse → cherche "Mermaid" et installe le plugin, ou alors :
-
-Settings → Core plugins → vérifie que "Mermaid diagrams" est bien activé si tu as une version récente d'Obsidian.
-
-Si c'est déjà activé et que l'erreur persiste, ça peut venir de la version d'Obsidian. Quelle version tu utilises ? (Settings → About)
-
-je pense qi'il est actif car j'arrive à coller du mermaid et avoir un rendu.
-par contre, les schéma sont coupés
-12 juin
-
-Le schéma est coupé à droite — le Groupe 2 et ses disques ne s'affichent pas. C'est un problème de largeur du panneau Obsidian qui ne suffit pas pour un graphe trop large.
-
-La solution est de forcer une disposition verticale plus compacte en évitant que les groupes soient trop côte à côte. Remplace le schéma RAID 50 par celui-ci :
-DonnéesRAID 0 - StripingGroupe 1 - RAID 5Disque 1Disque 2Disque 3 - paritéGroupe 2 - RAID 5Disque 4Disque 5
-Disque 6 - parité
-
-Si c'est encore coupé, tu peux passer en disposition LR (gauche → droite) qui utilise mieux la hauteur disponible :
-DonnéesRAID 0 - StripingGroupe 1RAID 5Disque 1Disque 2Disque 3paritéGroupe 2RAID 5Disque 4Disque 5
-Disque 6parité
-
-Le LR est souvent plus lisible pour les structures hiérarchiques larges dans Obsidian.
-
-même problème avec le LR
-12 juin
-
-Le problème vient du fait qu'Obsidian tronque les labels des nœuds et coupe à droite peu importe l'orientation. C'est une limite du rendu Mermaid dans Obsidian — les nœuds terminaux dépassent la fenêtre.
-
-La solution est de raccourcir au maximum les labels :
-DonnéesRAID 0Groupe 1RAID 5Groupe 2RAID 5D1D2D3PD4D5
-D6P
-
-Labels courts = nœuds plus petits = tout rentre. Le P suffit pour indiquer la parité dans le contexte du schéma.
-
 pour le raid 6: une parité est un élément XOR de A1 + A2 ?
 12 juin
 
@@ -333,6 +307,7 @@ Oui, c'est exactement ça pour P (parité simple, comme en RAID 5).
 
 Mais le RAID 6 ajoute une deuxième parité Q qui utilise un algorithme différent — Reed-Solomon — car si on faisait juste deux XOR, on ne pourrait pas distinguer lequel des deux disques est tombé lors d'une double panne.
 
+```
 Disques :    D1    D2    D3    P         Q
 Données :    A1    A2    A3    
                                
@@ -341,7 +316,7 @@ Q (Reed-Solomon) :                       f(A1,A2,A3)
 
     P = XOR simple → permet de reconstruire 1 disque perdu
     Q = calcul polynomial → permet de reconstruire même si P est aussi perdu
-
+```
 En résumé :
 Panne	Utilisé
 1 disque de données	P suffit
@@ -353,25 +328,6 @@ C'est ce qui permet au RAID 6 de survivre à 2 pannes simultanées, ce que le XO
 peux tu me refaire les schéma en incroporant cette données ?
 12 juin
 
-Voilà les schémas mis à jour :
-RAID 5 — Parité simple (XOR)
-DonnéesD1A1D2A2D3A3
-PA1⊕A2⊕A3
-RAID 6 — Double parité
-DonnéesD1A1D2A2D3A3PA1⊕A2⊕A3
-QReed-Solomonf·A1·A2·A3
-RAID 6 — Scénarios de reconstruction
-Panne 1 disqueP suffitXOR inversePanne 2 disquesP + Q combinésP perdu + 1 disque
-Q prend le relais
-RAID 50 — avec parité visible
-DonnéesRAID 0Groupe 1RAID 5Groupe 2RAID 5D1D2PXORD4D5
-PXOR
-RAID 60 — avec double parité visible
-DonnéesRAID 0Groupe 1RAID 6Groupe 2RAID 6D1D2PXORQRSD4D5PXOR
-QRS
-
-RS = Reed-Solomon, ⊕ = XOR — les labels restent courts pour éviter la troncature dans Obsidian.
-
 je n'ai pas bien compris le read solomon.
 
 le disques peucent se reconstruire à partir de la parité, pourquoi ne pas l'utiliser partout ?
@@ -380,13 +336,13 @@ Reed-Solomon — pourquoi XOR ne suffit pas
 Le problème avec deux pannes et XOR
 
 Imagine 3 disques + P (XOR) :
-
+```
 D1=3   D2=5   D3=6   P=3⊕5⊕6=0
-
+```
 Si D1 et D2 tombent en même temps :
-
+```
 D1=?   D2=?   D3=6   P=0
-
+```
 On sait que : D1⊕D2⊕6 = 0
 Donc        : D1⊕D2   = 6
 
@@ -398,7 +354,7 @@ Donc        : D1⊕D2   = 6
 Ce que Reed-Solomon apporte
 
 Reed-Solomon traite les données comme des points sur une courbe polynomiale. Chaque disque est une valeur de ce polynôme.
-
+```
 Polynôme :  f(x) = A1·x² + A2·x + A3
 
 D1 = f(1)
@@ -406,7 +362,7 @@ D2 = f(2)
 D3 = f(3)
 P  = f(4)   ← parité XOR
 Q  = f(5)   ← point supplémentaire sur la courbe
-
+```
 Avec 2 points connus, on peut toujours reconstruire un polynôme de degré 2 — c'est un théorème mathématique.
 
 2 disques perdus = 2 inconnues
@@ -414,10 +370,10 @@ P + Q            = 2 équations indépendantes
 → système soluble, solution unique
 
 Pourquoi ne pas utiliser RS partout alors ?
-	XOR (P)	Reed-Solomon (Q)
+XOR (P)	                Reed-Solomon (Q)
 Calcul	Ultra rapide	Coûteux en CPU
 Reconstruction	Simple	Complexe
-Tolère	1 panne	2 pannes
+Tolère	1 panne	        2 pannes
 
 En RAID 5, XOR est suffisant et quasi gratuit en performance. Ajouter RS sans nécessité alourdirait inutilement chaque écriture.
 
