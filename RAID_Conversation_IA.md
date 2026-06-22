@@ -24,7 +24,7 @@ RAID 0 — Striping
 
 Les données sont découpées en blocs et répartis sur tous les disques en parallèle. Aucune redondance : si un disque tombe, tout est perdu. Utilisé pour la performance pure (montage vidéo, cache temporaire).
 
-```
+```text
 Données : [A1][A2][A3][A4]
 Disque 1 : [A1][A3]
 Disque 2 : [A2][A4]
@@ -33,7 +33,7 @@ Disque 2 : [A2][A4]
 RAID 1 — Mirroring
 
 Chaque donnée est écrite simultanément sur deux disques (copie exacte). Survit à la perte d'un disque. Capacité réduite de moitié.
-```
+```text
 Données : [A]
 Disque 1 : [A]
 Disque 2 : [A]  ← copie exacte
@@ -42,7 +42,7 @@ Disque 2 : [A]  ← copie exacte
 RAID 5 — Striping + parité distribuée
 
 Les données et un bloc de parité (XOR) sont répartis sur tous les disques. Permet de reconstruire les données si un disque tombe. Bon compromis performance/redondance/capacité.
-```
+```text
 Disque 1 : [A1][B1][P_C]
 Disque 2 : [A2][P_B][C1]
 Disque 3 : [P_A][B2][C2]
@@ -60,7 +60,7 @@ RAID 10 (1+0)
 
 On crée des paires miroir (RAID 1), puis on stripe (RAID 0) entre elles.
 
-```
+```text
         RAID 0 (striping)
        ┌──────┴──────┐
     Paire 1       Paire 2
@@ -246,7 +246,7 @@ Disque 3 → répond à requête 3
 Les deux combinés — RAID 10
 
 Le RAID 10 est l'exemple parfait qui cumule les deux :
-```
+```text
 Requête lecture :
         RAID 0
        ┌──────┴──────┐
@@ -307,7 +307,7 @@ Oui, c'est exactement ça pour P (parité simple, comme en RAID 5).
 
 Mais le RAID 6 ajoute une deuxième parité Q qui utilise un algorithme différent — Reed-Solomon — car si on faisait juste deux XOR, on ne pourrait pas distinguer lequel des deux disques est tombé lors d'une double panne.
 
-```
+```text
 Disques :    D1    D2    D3    P         Q
 Données :    A1    A2    A3    
                                
@@ -336,11 +336,11 @@ Reed-Solomon — pourquoi XOR ne suffit pas
 Le problème avec deux pannes et XOR
 
 Imagine 3 disques + P (XOR) :
-```
+```text
 D1=3   D2=5   D3=6   P=3⊕5⊕6=0
 ```
 Si D1 et D2 tombent en même temps :
-```
+```text
 D1=?   D2=?   D3=6   P=0
 ```
 On sait que : D1⊕D2⊕6 = 0
@@ -354,7 +354,7 @@ Donc        : D1⊕D2   = 6
 Ce que Reed-Solomon apporte
 
 Reed-Solomon traite les données comme des points sur une courbe polynomiale. Chaque disque est une valeur de ce polynôme.
-```
+```text
 Polynôme :  f(x) = A1·x² + A2·x + A3
 
 D1 = f(1)
@@ -388,25 +388,21 @@ Raid synthese
 Document · MD 
 
 la parité XOR peut aussi être représenté 
-
+```mermaid
 graph LR
     D[Données] --> D1[D1
-    A1 + (A2 + A3)]
+    A1 + (A2+A3)]
     D --> D2[D2
     A2 + (A1+A3)]
     D --> D3[D3
     A3 + (A1+A2)]
-
-?
-12 juin
-
-Non, ce n'est pas correct. Ce que tu décris là c'est chaque disque qui contient à la fois sa donnée ET la parité des autres — ça n'existe pas en RAID 5.
-
+```
 En RAID 5, la parité est un bloc séparé qui tourne entre les disques :
-
+```text
 Stripe 1 :  D1=A1   D2=A2   D3=A3   P=A1⊕A2⊕A3
 Stripe 2 :  D1=B1   D2=B2   P=B1⊕B2⊕B3   D3=B3
 Stripe 3 :  D1=C1   P=C1⊕C2⊕C3   D2=C2   D3=C3
+```
 
 La parité tourne pour ne pas surcharger un seul disque en écriture. Donc le schéma correct reste :
 DonnéesD1A1D2A2D3A3
@@ -420,11 +416,12 @@ si elle n'est pas sur les disques physique, où se trouve-elle ?
 Bonne question — elle est bien sur les disques physiques, mais j'ai mal formulé.
 
 La parité tourne entre les disques physiques selon les stripes :
-
+```text
            D1        D2        D3
 Stripe 1 [ A1    ][ A2    ][ A1⊕A2 ]  ← P sur D3
 Stripe 2 [ B1    ][ B1⊕B2 ][ B2    ]  ← P sur D2
 Stripe 3 [ C1⊕C2 ][ C1    ][ C2    ]  ← P sur D1
+```
 
 Donc sur chaque disque physique on trouve un mélange de données et de blocs de parité selon le stripe concerné. Aucun disque n'est dédié uniquement à la parité — c'est précisément ce qui distingue le RAID 5 d'un RAID 4 (où un disque entier est dédié à P).
 
@@ -459,7 +456,7 @@ Document · MD
 je ne comprends toujours pas bien cette partie.
 Les données et un bloc de parité (XOR) sont répartis sur tous les disques. La parité tourne entre les disques physiques à chaque stripe — aucun disque n'est dédié uniquement à la parité. Chaque disque contient donc un mélange de blocs de données et de blocs de parité selon le stripe concerné.
 C'est ce qui distingue le RAID 5 du RAID 4, où un disque entier est dédié à la parité.
-
+```mermaid
 graph TD
     S1[Stripe 1] --> A1[D1: A1]
     S1 --> A2[D2: A2]
@@ -473,7 +470,8 @@ graph TD
     style A3 fill:#ffaa00,color:#000
     style B2 fill:#ffaa00,color:#000
     style C1 fill:#ffaa00,color:#000
-
+```
+---
 Les blocs oranges sont les blocs de parité — physiquement stockés sur les disques, mais répartis sur chacun d'eux selon une rotation.
 ---
 un strip est une couche du disque ?
@@ -484,30 +482,34 @@ Pas tout à fait. Voilà comment ça s'organise :
 Un bloc = la plus petite unité de données écrite sur un disque (ex. 64 Ko)
 
 Un stripe = une "rangée" de blocs répartis sur tous les disques en même temps
-
+```text
            D1      D2      D3
 Stripe 1 [ A1  ][ A2  ][ P   ]   ← une rangée = 1 stripe
 Stripe 2 [ B1  ][ P   ][ B2  ]
 Stripe 3 [ P   ][ C1  ][ C2  ]
+```
 
 Donc sur le disque physique D1, tu as empilés verticalement :
-
+```text
 D1 (disque physique)
 ├── bloc A1   (données du stripe 1)
 ├── bloc B1   (données du stripe 2)
 └── bloc P    (parité du stripe 3)
+```
 
 La rotation de la parité, c'est juste que le bloc P ne tombe pas toujours sur le même disque :
-
+```text
 Stripe 1 → P est sur D3
 Stripe 2 → P est sur D2
 Stripe 3 → P est sur D1
+```
 
 En RAID 4, ce serait toujours :
-
+```text
 Stripe 1 → P est sur D3
 Stripe 2 → P est sur D3   ← toujours le même
 Stripe 3 → P est sur D3   ← D3 surchargé
+```
 
 C'est pourquoi le RAID 4 crée un goulot d'étranglement sur le disque de parité — chaque écriture doit passer par lui. Le RAID 5 résout ce problème en distribuant la charge.
 
@@ -531,14 +533,15 @@ La différence fondamentale c'est le nombre d'inconnues qu'on peut résoudre.
 XOR — 1 équation, 1 inconnue
 
 XOR c'est une simple addition binaire sans retenue :
-
+```text
 0 ⊕ 0 = 0
 0 ⊕ 1 = 1
 1 ⊕ 0 = 1
 1 ⊕ 1 = 0   ← la différence avec l'addition normale
+```
 
 Propriété clé : A ⊕ B ⊕ A = B — on peut retrouver n'importe quel terme si on a tous les autres.
-
+```text
 Données :  A1=3   A2=5   A3=6
 P = 3⊕5⊕6 = 0
 
@@ -546,17 +549,17 @@ Panne de A2 :
 A1 ⊕ ? ⊕ A3 = P
 3  ⊕ ? ⊕ 6  = 0
            ? = 3⊕6⊕0 = 5  ✓  → A2 retrouvé
-
+```
 Mais avec 2 pannes simultanées :
-
+```text
 ?  ⊕ ?  ⊕ A3 = P
 ?  ⊕ ?  ⊕ 6  = 0
 → infinité de solutions, impossible à résoudre
-
+```
 Reed-Solomon — 2 équations, 2 inconnues
 
 Reed-Solomon modélise les données comme un polynôme dont chaque disque est un point :
-
+```text
 Polynôme f(x) de degré 2 :
 f(x) = a·x² + b·x + c
 
@@ -565,15 +568,15 @@ D2 = f(2) = 4a + 2b + c
 D3 = f(3) = 9a + 3b + c
 P  = f(4) = 16a + 4b + c   ← XOR
 Q  = f(5) = 25a + 5b + c   ← Reed-Solomon
-
+```
 En géométrie : 2 points suffisent toujours à reconstruire une droite, 3 points une parabole.
-
+```text
       f(x)
   *         ← Q = f(5) connu
         *   ← P = f(4) connu
   D1=?      ← perdu
       D2=?  ← perdu
-
+```
 → on a encore 2 points (P et Q)
 → on peut recalculer le polynôme
 → on retrouve f(1) et f(2)  ✓
@@ -595,47 +598,52 @@ la raid 6 a donc besoin de disque supplémetaire vu qu'il doit avoir la parité 
 12 juin
 
 Oui, exactement. Le RAID 6 nécessite 2 disques de parité supplémentaires par rapport aux données :
-
+```text
 RAID 5 avec 3 disques de données :
 D1   D2   D3   P
 ←  données →  ← 1 disque parité
+```
 
 RAID 6 avec 3 disques de données :
+```text
 D1   D2   D3   P    Q
 ←  données →  ← 2 disques parité
-
+```
 C'est pour ça que le RAID 6 a un minimum de 4 disques (contre 3 pour le RAID 5), et que sa capacité utile est (n-2)/n au lieu de (n-1)/n.
 
 Exemple concret avec 6 disques :
 
 RAID 5 sur 6 disques :
+```text
 D1  D2  D3  D4  D5  P
 → 5 disques utiles sur 6  (83%)
-
+```
 RAID 6 sur 6 disques :
+```text
 D1  D2  D3  D4  P   Q
 → 4 disques utiles sur 6  (66%)
-
+```
 Le coût en capacité est réel — mais il se justifie dans les grands volumes où la probabilité que deux disques tombent pendant la reconstruction d'un premier devient non négligeable. Plus le volume est grand, plus la reconstruction est longue, plus le risque d'une deuxième panne pendant ce temps augmente.
 
 et le read solomon est aussi en rotation ?
 12 juin
 
 Oui, exactement comme P. Les deux blocs P et Q tournent ensemble à chaque stripe :
-
+```text
            D1       D2       D3       D4
 Stripe 1 [ A1   ][ A2   ][ P    ][ Q    ]
 Stripe 2 [ B1   ][ P    ][ Q    ][ B2   ]
 Stripe 3 [ P    ][ Q    ][ C1   ][ C2   ]
 Stripe 4 [ Q    ][ D1   ][ D2   ][ P    ]
-
+```
 Chaque disque physique contient donc un mix des quatre types de blocs :
-
+```text
 D1 (disque physique)
 ├── A1   (données, stripe 1)
 ├── B1   (données, stripe 2)
 ├── P    (parité XOR, stripe 3)
 └── Q    (Reed-Solomon, stripe 4)
+```
 
 La logique est la même qu'en RAID 5 — distribuer la charge sur tous les disques pour éviter qu'un seul soit surchargé. Ici on distribue deux blocs de parité au lieu d'un, mais le principe de rotation reste identique.
 
@@ -644,7 +652,7 @@ peux-tu créer les schémas en code ASCII ?
 
 Voilà tous les schémas en ASCII :
 RAID 5 — rotation de la parité P
-
+```text
            D1        D2        D3
          +--------+--------+--------+
 Stripe 1 |  A1    |  A2    | [P]    |
@@ -655,9 +663,10 @@ Stripe 3 | [P]    |  C1    |  C2    |
          +--------+--------+--------+
 
 [P] = bloc de parité XOR
+```
 
 RAID 6 — rotation de P et Q
-
+```text
            D1        D2        D3        D4
          +--------+--------+--------+--------+
 Stripe 1 |  A1    |  A2    | [P]    | [Q]    |
@@ -670,9 +679,10 @@ Stripe 4 | [Q]    |  D1    |  D2    | [P]    |
          +--------+--------+--------+--------+
 
 [P] = parité XOR     [Q] = Reed-Solomon
+```
 
 Contenu d'un disque physique (RAID 6)
-
+```text
 D1 (disque physique)
 +---------------------------+
 | stripe 1 |  A1  (données) |
@@ -683,11 +693,11 @@ D1 (disque physique)
 +---------------------------+
 | stripe 4 | [Q]  (RS)      |
 +---------------------------+
-
+```
 RAID 4 vs RAID 5 — goulot d'étranglement
 
 RAID 4 — P toujours sur D3 :
-
+```text
            D1        D2        D3
          +--------+--------+--------+
 Stripe 1 |  A1    |  A2    | [P]    | <-- écriture sur D3
@@ -698,10 +708,10 @@ Stripe 3 |  C1    |  C2    | [P]    | <-- écriture sur D3
          +--------+--------+--------+
                               ^^^^
                          D3 surchargé
-
+```
 
 RAID 5 — P tourne entre les disques :
-
+```text
            D1        D2        D3
          +--------+--------+--------+
 Stripe 1 |  A1    |  A2    | [P]    | <-- écriture sur D3
@@ -721,7 +731,7 @@ XOR — 1 équation :
 
   1 disque perdu :   A1 ⊕ [?] ⊕ A3 = P  →  solution unique  ✓
   2 disques perdus : [?] ⊕ [?] ⊕ A3 = P  →  impossible       ✗
-
+```
 
 Reed-Solomon — 2 équations :
 
@@ -735,6 +745,7 @@ y compris raid 10 , raid 01 et raid 60 (en UTF8 pour que ce soit plus beau)
 12 juin
 
 Voilà tous les schémas en UTF-8 :
+```text
 RAID 0 — Striping
 
          D1        D2
@@ -744,7 +755,9 @@ RAID 0 — Striping
        │  A3    │  A4    │
        └────────┴────────┘
        ← données réparties en parallèle →
+```
 
+```text
 RAID 1 — Mirroring
 
          D1        D2
@@ -755,7 +768,9 @@ RAID 1 — Mirroring
        └────────┴────────┘
                   ↑
              copie exacte
+```
 
+```text
 RAID 4 vs RAID 5
 
 RAID 4 — P toujours sur D3 :
@@ -784,9 +799,11 @@ Stripe 3 │ ░P░    │  C1    │  C2    │ ← écriture sur D1
          └────────┴────────┴────────┘
             ↑↑↑      ↑↑↑      ↑↑↑
          charge distribuée équitablement
+```
 
 RAID 6 — double parité tournante
 
+```text
            D1        D2        D3        D4
          ┌────────┬────────┬────────┬────────┐
 Stripe 1 │  A1    │  A2    │ ░P░    │ ▒Q▒    │
@@ -812,9 +829,10 @@ Contenu d'un disque physique (RAID 6)
   ├──────────────────────────┤
   │ stripe 4 │ ▒Q▒ (RS)      │
   └──────────────────────────┘
+```
 
 RAID 10 — Mirror + Stripe
-
+```text
               Données
                  │
          ┌───────┴───────┐
@@ -832,7 +850,9 @@ RAID 10 — Mirror + Stripe
 
   Panne D1 → D2 prend le relais  (failover)
   Lecture   → D1+D2 et D3+D4 en parallèle  (load balancing)
+```
 
+```text
 RAID 01 — Stripe + Mirror
 
               Données
@@ -851,7 +871,9 @@ RAID 01 — Stripe + Mirror
 
   Panne D1 → tout le groupe 1 hors service
            → seul le groupe 2 reste actif  ⚠️
+```
 
+```text
 RAID 50 — RAID 5 + Stripe
 
               Données
@@ -872,7 +894,9 @@ RAID 50 — RAID 5 + Stripe
   │ C1  │░P░  │ C2  │    │ D1  │░P░  │ D2  │
   └─────┴─────┴─────┘    └─────┴─────┴─────┘
   P tourne dans chaque groupe indépendamment
+```
 
+```text
 RAID 60 — RAID 6 + Stripe
 
               Données
@@ -898,10 +922,10 @@ XOR vs Reed-Solomon
 
 XOR — 1 équation :
   ┌────────────────────────────────────────────┐
-  │  A1 ⊕ A2 ⊕ A3 = P                         │
+  │  A1 ⊕ A2 ⊕ A3 = P                          │
   │                                            │
-  │  1 panne  : A1 ⊕ [?] ⊕ A3 = P  →  ✓      │
-  │  2 pannes : [?] ⊕ [?] ⊕ A3 = P  →  ✗      │
+  │  1 panne  : A1 ⊕ [?] ⊕ A3 = P  →  ✓        │
+  │  2 pannes : [?] ⊕ [?] ⊕ A3 = P  →  ✗       │
   └────────────────────────────────────────────┘
 
 Reed-Solomon — 2 équations :
@@ -912,3 +936,4 @@ Reed-Solomon — 2 équations :
   │  2 disques perdus = 2 inconnues            │
   │  2 équations      = système soluble  →  ✓  │
   └────────────────────────────────────────────┘
+```
