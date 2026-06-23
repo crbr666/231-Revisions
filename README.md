@@ -92,7 +92,7 @@ Stripe 3 → P est sur D3   ← D3 surchargé
 #### Vue par stripe (RAID 5)
 
 ```mermaid
-graph TD
+graph LR
     S1[Stripe 1] --> A1[D1: A1]
     S1 --> A2[D2: A2]
     S1 --> A3[D3: A1⊕A2]
@@ -139,7 +139,7 @@ D1 (disque physique)
 La logique est la même qu'en RAID 5 — distribuer la charge sur tous les disques pour éviter qu'un seul soit surchargé. Ici on distribue **deux** blocs de parité au lieu d'un, mais le principe de rotation reste identique.
 
 ```mermaid
-graph TD
+graph LR
     S1[Stripe 1] --> A1[D1: A1]
     S1 --> A2[D2: A2]
     S1 --> A3[D3: A1⊕A2]
@@ -159,7 +159,7 @@ graph TD
 #### Scénarios de reconstruction RAID 6
 
 ```mermaid
-graph TD
+graph LR
     P1[Panne 1 disque] --> R1[P suffit XOR inverse]
     P2[Panne 2 disques] --> R2[P + Q combinés]
     P3[P perdu + 1 disque] --> R3[Q prend le relais]
@@ -340,7 +340,7 @@ graph LR
 Quand un disque tombe, le système recalcule les données manquantes via XOR à partir des blocs survivants — peu importe que le bloc perdu soit une donnée ou un bloc de parité.
 
 ```mermaid
-graph TD
+graph LR
     C[Client]
     C --> D1[D1 A1 · B1 · C1⊕C2]
     C --> D2[D2 ✗ mort]
